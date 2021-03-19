@@ -1,0 +1,13 @@
+local_costmap:
+  global_frame: $(arg robot)/odom
+  
+  update_frequency: $(arg controller_frequency)
+  publish_frequency: $(arg controller_frequency)
+
+  rolling_window: true
+  width: 3
+  height: 3
+
+  inflation_layer: 
+    cost_scaling_factor: 1.
+    inflation_radius: 1.

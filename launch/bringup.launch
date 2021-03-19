@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<launch>
+    
+    <arg name="robot" default="unicycle"/>
+    <arg name="planner" default="dwa_unicycle"/>
+    <arg name="controller_frequency" default="10"/>
+    
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="theta" default="0"/>
+    
+    <group ns="robot">
+            
+        <!-- Load the robot description -->
+        <param name="robot_description" command="$(find xacro)/xacro $(find steering_control)/urdf/$(arg robot).xacro prefix:=$(arg robot)/"/>
+    
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/> 
+        
+        <!-- Run a global planner -->
+        <include file="$(find steering_control)/launch/global_planner.launch">
+            <arg name="robot" value="$(arg robot)"/>
+        </include>
+        
+        <!-- Run local planner = control + costmap -->    
+        <node type="$(arg planner)" pkg="steering_control" name="control" output="screen">
+            
+            <param name="x0" value="$(arg x)"/>            
+            <param name="y0" value="$(arg y)"/>
+            <param name="theta0" value="$(arg theta)"/>
+            
+            <!-- Control params are in ~local_planner namespace -->
+            <rosparam file="$(find steering_control)/param/local_planners/$(arg planner).yaml" command="load" subst_value="true" ns="local_planner"/>
+            
+            <!-- Costmap params are in ~local_costmap namespace -->
+            <rosparam file="$(find steering_control)/param/costmap_common.yaml" command="load" subst_value="true" ns="local_costmap"/>
+            <rosparam file="$(find steering_control)/param/local_costmap.yaml" command="load" subst_value="true"/>
+        </node>
+    
+        
+        <!-- Other nodes / params required by this robot (cmd_vel -> joints for example) -->
+        <include file="$(find steering_control)/launch/robots/$(arg robot).launch"/>
+        
+    </group>
+    
+</launch>

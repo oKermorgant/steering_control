@@ -1,0 +1,9 @@
+# params for greedy_nowalls
+v_gain: 3.
+w_gain: 2.
+
+xy_tolerance: 0.02
+yaw_tolerance: 0.05
+
+v_max: 0.55
+w_max: 3.75

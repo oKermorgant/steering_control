@@ -1,0 +1,9 @@
+costmap:
+  global_frame: map
+
+  update_frequency: 0.1
+  publish_frequency: 0.1
+  
+  inflation_layer: 
+    cost_scaling_factor: 5.
+    inflation_radius: 1.

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+    
+    <arg name="robot" default="robot"/>
+    
+    <node name="planner" pkg="global_planner" type="planner">
+        
+        <!-- Costmap params are in ~costmap namespace -->
+        <rosparam file="$(find steering_control)/param/costmap_common.yaml" command="load" subst_value="true" ns="costmap"/>
+        <rosparam file="$(find steering_control)/param/global_costmap.yaml" command="load"  subst_value="true" ns="costmap"/>
+            
+        <!-- Planner params are in ~planner namespace  -->
+        <rosparam file="$(find steering_control)/param/global_planner.yaml" command="load" subst_value="true" ns="planner"/>
+    </node>
+    
+</launch>
