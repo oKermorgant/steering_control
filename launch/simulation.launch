@@ -7,7 +7,7 @@
         <param name="rate" value="20"/>
         <param name="max_width" value="1200"/>
         <param name="max_height" value="800"/>
-        <param name="display" value="false"/>
+        <param name="display" value="true"/>
     </node>
     
     <node pkg="map_server" name="map_server" type="map_server" args="$(arg map)"/>

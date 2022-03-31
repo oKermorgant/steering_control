@@ -44,13 +44,13 @@ For example, in `dwa_unicycle.cpp`, the DWAPlanner needs to take into account th
 
 ## Summary of custom settings
 
-Assuming that you try to develop a `car-like` robot and a `car-like-planner` planner, at least these files should be created:
+Assuming that you try to develop a `bicycle` robot and a `dwa_bicycle_planner` planner, at least these files should be created:
 
 - robot-related:
-  - `urdf/car-like.xacro`: the model of your robot
-  - `launch/robots/car-like.launch`: empty or run additional nodes for this robot
+  - `urdf/dwa_bicycle.xacro`: the model of your robot
+  - `launch/robots/dwa_bicycle.launch`: empty or run additional nodes for this robot
 - planner-related:
-  - `param/local_planners/car-like-planner.yaml`: configuration file of your planner
-  - `src/control_nodes/car-like-planner.cpp`: the source of your control node, that is compiled into the `car-like-planner` executable. You should define the actual planner class in separate header/source files and compile it as a standalone library, to be used as a move_base plugin later on.
+  - `param/local_planners/dwa_bicycle_planner.yaml`: configuration file of your planner
+  - `src/control_nodes/dwa_bicycle_planner.cpp`: the source of your control node, that is compiled into the `dwa_bicycle_planner` executable. You should define the actual planner class in separate header/source files and compile it as a standalone library, to be used as a move_base plugin later on.
   
-You can then run `roslaunch bringup.launch robot:=car-like planner:=car-like-planner`. While this is running, you can also edit and re-run the control node.
+You can then run `roslaunch bringup.launch robot:=bicycle planner:=dwa_bicycle_planner`. While this is running, you can also edit and re-run the control node.
