@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="map" default="$(find map_simulator)/example/house.yaml"/>
+    <arg name="map" default="$(find steering_control)/maps/simple_warehouse.yaml"/>
 
     <node pkg="map_simulator" type="simulator" name="simulator" output="screen">
         <param name="map" value="$(arg map)"/>

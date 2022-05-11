@@ -3,13 +3,15 @@
 #include "std_msgs/Float64.h"
 #include <tf2/utils.h>
 
-
-double beta_global;
-void beta_callback(const std_msgs::Float64 & beta_sub)
+double orientationFrom(const geometry_msgs::Quaternion &q)
 {
-    beta_global = beta_sub.data;
-};
+  return 2*atan2(q.z, q.w);
+}
 
+double sqDist(double dx,double dy)
+{
+  return dx*dx+dy*dy;
+}
 
 void DWABicycle::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap)
 {
@@ -17,6 +19,7 @@ void DWABicycle::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::C
   this->costmap = costmap;
 
   // load private parameters
+  ros::NodeHandle nh;
   ros::NodeHandle priv("~" + name);
 
   v_gain = priv.param("v_gain", 0.5);
@@ -25,19 +28,35 @@ void DWABicycle::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::C
   yaw_tolerance = priv.param("yaw_tolerance", 0.1);
   v_max = priv.param("v_max", 0.55);
   beta_max = priv.param("beta_max", 2.);
-  dbeta_max = priv.param("beta_max", 0.5);
+  beta_dot_max = priv.param("beta_dot_max", 0.5);
 
   simtime = priv.param("simtime", 2.);
   time_samples = priv.param("time_samples", 40);
-  v_samples = priv.param("v_samples", 10);
-  beta_samples = priv.param("beta_samples", 21);
+  v_step = 2*v_max / priv.param("v_samples", 10.);
+  beta_dot_step = 2*beta_dot_max / priv.param("beta_samples", 21.);
 
-  Length = priv.param("length", 0.15);
+  // length param is parsed and set by fwd_kinematics node
+  ros::Rate wait(1.);
+  while(!nh.hasParam("fwd_kinematics/L"))
+    wait.sleep();
+  Length = nh.param("fwd_kinematics/L", 1.);
 
   local_plan_pub = priv.advertise<nav_msgs::Path>("global_plan", 100);
   traj_pub = priv.advertise<nav_msgs::Path>("local_plan", 100);
-  beta_dot_pub = priv.advertise<std_msgs::Float64>("beta_dot",100);
-  beta_sub = priv.subscribe("beta",100,beta_callback);
+
+  // steering things
+  beta_joint = priv.param<std::string>("beta_joint", "steering");
+  cmd_pub = nh.advertise<std_msgs::Float32MultiArray>("cmd",100);
+  // cmd is of dimension 2
+  cmd.data.resize(2, 0.);
+
+  joint_sub = nh.subscribe<sensor_msgs::JointState>("joint_states", 5, [this](sensor_msgs::JointStateConstPtr msg)
+  {
+              const auto joint = std::find(msg->name.begin(), msg->name.end(), beta_joint);
+              if(joint == msg->name.end())
+              return;
+              beta = msg->position[std::distance(msg->name.begin(), joint)];
+});
 
   local_pose.header.frame_id = costmap->getBaseFrameID();
   local_pose.pose.orientation.w = 1;
@@ -55,112 +74,84 @@ bool DWABicycle::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
   // get last pose of local_plan
   const auto &goal(local_plan.back().pose);
   local_pose.header.stamp = ros::Time::now();
-  beta = beta_global;
-
 
   //base_local_planner::publishPlan({local_pose, local_plan.back()}, traj_pub);
 
-  auto delta_x(goal.position.x);
-  auto delta_y(goal.position.y);
-  double delta_theta = 0;
-
-  //parameters to tune
+  //parameters to tune, should be ROS parameters
   double alpha_obst = 5.; //effect of the obstacles on the grade
   double alpha_goal = 60.;//effect of proximity to the goal
   double alpha_linear_dist_to_path = 0/time_samples;
   double alpha_angular_dist_to_path = 0/time_samples;
 
   //actual command and the max grade
-  double v_command = 1.;
-  double dbeta_command = 0.;
-  auto min_grade(std::numeric_limits<double>::max());
+  auto best_cost(std::numeric_limits<double>::max());
+  const auto dt{simtime/(time_samples-1)};
 
-
-  //table sampling the velocity space (v,beta) and associating each pair with a grade
-
-
-  for (int i=0 ; i<v_samples; i++)
+  //table sampling the velocity space (v,beta dot) and associating each pair with a grade
+  for(double v = -v_max; v <= v_max; v += v_step)
   {
-      for (int j=0 ; j<beta_samples; j++)
+    for (auto beta_dot = -beta_dot_max; beta_dot <= beta_dot_max; beta_dot += beta_dot_step)
+    {
+      // init current position
+      auto x{local_pose.pose.position.x};
+      auto y{local_pose.pose.position.y};
+      auto theta{orientationFrom(local_pose.pose.orientation)};
+      auto current_beta{beta};
+
+      // compute cost for this command
+      double cost = 0;
+      for (int k=0; k<time_samples; k++)
       {
-          double v = 0 + i*v_max/(v_samples-1);
-          double dbeta = -dbeta_max + j*2*dbeta_max/(beta_samples-1);
-          geometry_msgs::PoseStamped current_pose = local_pose;
-          double dt = simtime/(time_samples-1);
-          double current_beta = beta;
-          double current_theta;
-          //grade for the trajectory
-          double grade = 0;
-          for (int k=0; k<time_samples; k++){
-              current_theta = 2*atan2(sqrt(pow(current_pose.pose.orientation.x,2)+pow(current_pose.pose.orientation.y,2)
-                                           +pow(current_pose.pose.orientation.z,2)), current_pose.pose.orientation.w);
-              //we then increment all the variables debscribing the state of the robot after a time dt.
-              current_pose.pose.position.x += dt*v*(cos(current_theta)*cos(current_beta)-
-                                                    0.5*sin(current_theta)*sin(current_beta));
-              current_pose.pose.position.y += dt*v*(sin(current_theta)*cos(current_beta)+
-                                                    0.5*cos(current_theta)*sin(current_beta));
-              current_theta += dt*v*sin(current_beta)/Length;
-              current_pose.pose.orientation.x = 0;
-              current_pose.pose.orientation.y = 0;
-              current_pose.pose.orientation.z = sin(current_theta/2);
-              current_pose.pose.orientation.w = cos(current_theta/2);
-              current_beta = std::clamp(current_beta+dt*dbeta,-beta_max, beta_max);
-              unsigned int x_map;
-              unsigned int y_map;
-              if(costmap->getCostmap()->worldToMap(current_pose.pose.position.x, current_pose.pose.position.y, x_map,y_map))
-              {
-                  grade += alpha_obst*(costmap->getCostmap()->getCost(x_map,y_map));
-              }
+        // move with (v, beta_dot)
+        x += v*cos(theta)*cos(current_beta) * dt;
+        y += v*sin(theta)*cos(current_beta) * dt;
+        theta += v*sin(current_beta)/Length * dt;
+        current_beta = std::clamp(current_beta+ beta_dot*dt, -beta_max, beta_max);
 
-              double dist_to_traj = std::numeric_limits<double>::max();
-              double ang_dist_to_traj = std::numeric_limits<double>::max();
-              double current_dist_to_traj;
-              for(geometry_msgs::PoseStamped pose_traj : local_plan)
-              {
-                  current_dist_to_traj = sqrt(pow(pose_traj.pose.position.x-current_pose.pose.position.x,2)
-                                      +pow(pose_traj.pose.position.y-current_pose.pose.position.y,2));
-                  if(current_dist_to_traj < dist_to_traj)
-                  {
-                      dist_to_traj = current_dist_to_traj;
-                      ang_dist_to_traj = abs(2*atan2(current_pose.pose.orientation.z, current_pose.pose.orientation.w)
-                                             -2*atan2(pose_traj.pose.orientation.z, pose_traj.pose.orientation.w));
-                  }
-              }
-              grade += alpha_linear_dist_to_path*dist_to_traj + alpha_angular_dist_to_path*ang_dist_to_traj;
-          }
-          grade += alpha_goal*(pow(goal.position.x-current_pose.pose.position.x,2)
-                               +pow(goal.position.y-current_pose.pose.position.y,2)
-                               +pow(goal.orientation.w-current_pose.pose.orientation.w,2));
+        // costmap-related cost
+        unsigned int x_map;
+        unsigned int y_map;
+        if(costmap->getCostmap()->worldToMap(x, y, x_map,y_map))
+        {
+          cost += alpha_obst*(costmap->getCostmap()->getCost(x_map,y_map));
+        }
 
-          //we check if this is the best trajectory yet
-          if(grade < min_grade){
-              v_command = v;
-              dbeta_command = dbeta;
-              min_grade = grade;
+        // trajectory-related cost
+        // find closest point to traj
+        const auto distToRobot = [x,y](const geometry_msgs::PoseStamped &p1, const geometry_msgs::PoseStamped &p2)
+        {
+          return sqDist(p1.pose.position.x-x, p1.pose.position.y-y)
+              < sqDist(p2.pose.position.x-x, p2.pose.position.y-y);
+        };
+        const auto closest{std::min_element(local_plan.begin(), local_plan.end(), distToRobot)};
+        const auto closest_theta{orientationFrom(closest->pose.orientation)};
+        const auto orientation_error{std::abs(fmod(theta-closest_theta+M_PI, 2*M_PI)-M_PI)};
+        cost += alpha_linear_dist_to_path*sqrt(sqDist(closest->pose.position.x-x, closest->pose.position.y-y))
+                + alpha_angular_dist_to_path*orientation_error;
 
-          }
       }
+      // goal-related cost at the end of the simulation
+      cost += alpha_goal*sqrt(sqDist(goal.position.x-x, goal.position.y-y));
+
+      //we check if this is the best trajectory yet
+      if(cost < best_cost)
+      {
+        cmd.data[0] = v;
+        cmd.data[1] = beta_dot;
+        best_cost = cost;
+      }
+
+    }
   }
-
-
 
   //check if the goal is reached
-  if(sqrt(delta_x*delta_x + delta_y*delta_y) < xy_tolerance)
-  {
-    // almost there, just align
-    delta_theta = 2*atan2(goal.orientation.z, goal.orientation.w);
-
-    if(std::abs(delta_theta) < yaw_tolerance)
+  if(sqrt(sqDist(goal.position.x, goal.position.y)) < xy_tolerance &&
+     std::abs(orientationFrom(goal.orientation)) < yaw_tolerance)
       goal_reached = true;
-  }
 
-  auto theta(cmd_vel.angular.z);
-  cmd_vel.linear.x = (cos(theta)*cos(beta)-sin(theta)*sin(beta)/2)*v_command;
-  cmd_vel.linear.y = (sin(theta)*cos(beta)+cos(theta)*sin(beta)/2)*v_command;
-  cmd_vel.angular.z = (sin(beta)/Length)*v_command;
-  std_msgs::Float64 beta_dot;
-  beta_dot.data = dbeta_command;
-  beta_dot_pub.publish(beta_dot);
+  cmd_vel.linear.x = cos(beta)*cmd.data[0];
+  cmd_vel.angular.z = (sin(beta)/Length)*cmd.data[0];
+  cmd_pub.publish(cmd);
   ros::spinOnce();
   return true;
 }

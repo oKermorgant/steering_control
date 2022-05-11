@@ -66,12 +66,12 @@
     </collision>
   </link>
 
- <joint name="frame_to_handlebar" type="continuous">
+ <joint name="frame_to_handlebar" type="revolute">
     <axis xyz="0 0 1"/>
     <parent link="$(arg prefix)frameLink"/>
     <child link="$(arg prefix)handlebarLink"/>
     <origin rpy="0 -0.261799387799149 0" xyz="0.70  0  0.22"/>
-    <limit effort="100" velocity="100"/>
+    <limit effort="100" velocity="100" lower="-1.57" upper="1.57"/>
     <joint_properties damping="0.0" friction="0.0"/>
   </joint>
 

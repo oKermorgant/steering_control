@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node pkg="steering_control" type="beta1_twosteering" name="beta1_twosteering"/>
-    <node pkg="steering_control" type="beta2_twosteering" name="beta2_twosteering"/>
-</launch>

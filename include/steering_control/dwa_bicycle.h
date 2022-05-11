@@ -3,7 +3,10 @@
 
 #include <nav_core/base_local_planner.h>
 #include <base_local_planner/odometry_helper_ros.h>
-#include <std_msgs/Float64.h>
+// to publish commands
+#include <std_msgs/Float32MultiArray.h>
+// to get current steering angle
+#include <sensor_msgs/JointState.h>
 
 class DWABicycle : public nav_core::BaseLocalPlanner
 {
@@ -15,12 +18,12 @@ public:
   bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
   inline bool isGoalReached()
   {
-      return goal_reached;
+    return goal_reached;
   }
   bool setPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
 
   //wheel orientation
-  double beta;
+  double beta = 0;
 
 
 private:
@@ -34,16 +37,20 @@ private:
   double Length;
 
   // config
-  double v_gain, w_gain, xy_tolerance, yaw_tolerance, v_max, beta_max, dbeta_max;
-  double simtime, time_samples, v_samples, beta_samples;
+  double v_gain, w_gain, xy_tolerance, yaw_tolerance, v_max, beta_max, beta_dot_max;
+  double simtime, time_samples, v_step, beta_dot_step;
 
   // global plan
   bool goal_reached;
   geometry_msgs::PoseStamped local_pose;
   std::vector<geometry_msgs::PoseStamped> global_plan, local_plan;
   bool updateLocalPlan();
-  ros::Publisher local_plan_pub, traj_pub, beta_dot_pub;
-  ros::Subscriber beta_sub;
+  ros::Publisher local_plan_pub, traj_pub, cmd_pub;
+  ros::Subscriber joint_sub;
+  std::string beta_joint;
+
+  // low-level cmd (v, beta dot)
+  std_msgs::Float32MultiArray cmd;
 
   // geometry
   tf2_ros::Buffer *tf;

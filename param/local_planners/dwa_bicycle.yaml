@@ -1,4 +1,6 @@
-# params for greedy_nowalls
+# params for dwa_bicycle
+
+beta_joint: frame_to_handlebar
 v_gain: 3.
 w_gain: 2.
 
@@ -7,14 +9,11 @@ yaw_tolerance: 0.05
 
 v_max: 0.55
 beta_max: 1.6
-dbeta_max: 0.2
+beta_dot_max: 0.2
 
 # Forward Simulation Parameters
 sim_time: 2.
 time_samples: 40
 v_samples: 10
 beta_samples: 21
-
-# Geometry
-length: 0.15
 

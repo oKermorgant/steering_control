@@ -1,5 +1,5 @@
 local_costmap:
-  global_frame: $(arg robot)/odom
+  global_frame: odom
   
   update_frequency: $(arg controller_frequency)
   publish_frequency: $(arg controller_frequency)

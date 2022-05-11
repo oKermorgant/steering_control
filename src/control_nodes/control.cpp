@@ -50,7 +50,14 @@ void Controller::loadParam(const YAML::Node &node, std::string ns)
   {
     const auto val(node.as<std::string>());
     if(toBool.find(val) == toBool.end())
+      try
+    {
       priv.setParam(ns, std::stod(val));
+    }
+    catch (...)
+    {
+      priv.setParam(ns, val);
+    }
     else
       priv.setParam(ns, toBool.at(val));
   }
@@ -83,7 +90,7 @@ void Controller::respawnRobot() const
 
   std::stringstream ss;
   ss << "rosrun map_simulator spawn"
-     << " __ns:=robot "
+     << " __ns:=/robot "
      << " _x:=" << x
      << " _y:=" << y
      << " _theta:=" << theta

@@ -12,14 +12,16 @@
     <group ns="robot">
             
         <!-- Load the robot description -->
-        <param name="robot_description" command="$(find xacro)/xacro $(find steering_control)/urdf/$(arg robot).xacro prefix:=$(arg robot)/"/>
-    
-        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/> 
+        <param name="robot_description" command="$(find xacro)/xacro $(find steering_control)/urdf/$(arg robot).xacro prefix:=$(arg robot)/"/>    
+        <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>                 
         
         <!-- Run a global planner -->
         <include file="$(find steering_control)/launch/global_planner.launch">
             <arg name="robot" value="$(arg robot)"/>
         </include>
+        
+        <!-- Run forward kinematics node to link velocities and joints -->
+        <node pkg="map_simulator" type="fwd_kinematics.py" name="fwd_kinematics"/>
         
         <!-- Run local planner = control + costmap -->    
         <node type="$(arg planner)" pkg="steering_control" name="control" output="screen">
@@ -36,10 +38,7 @@
             <rosparam file="$(find steering_control)/param/local_costmap.yaml" command="load" subst_value="true"/>
         </node>
     
-        
-        <!-- Other nodes / params required by this robot (cmd_vel -> joints for example) -->
-        <include file="$(find steering_control)/launch/robots/$(arg robot).launch"/>
-        
+
     </group>
     
 </launch>

@@ -17,7 +17,7 @@
     <color rgba="0 0 0 1"/>
 </material>
   
-<link name="$(arg prefix)base_link">
+<link name="$(arg prefix)footprint">
 <visual>
     <origin xyz="0 0 ${height/2}"/>
     <geometry>

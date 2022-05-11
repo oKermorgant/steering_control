@@ -57,15 +57,3 @@ target_link_libraries(dwa_bicycle control)
 add_executable(dwa_twosteering src/dwa_twosteering_plugin.cpp src/control_nodes/dwa_twosteering.cpp)
 target_include_directories(dwa_twosteering PRIVATE ${catkin_INCLUDE_DIRS})
 target_link_libraries(dwa_twosteering control)
-
-add_executable(beta_bicycle src/beta_bicycle.cpp)
-target_include_directories(beta_bicycle PRIVATE ${catkin_INCLUDE_DIRS})
-target_link_libraries(beta_bicycle control)
-
-add_executable(beta1_twosteering src/beta1_twosteering.cpp)
-target_include_directories(beta1_twosteering PRIVATE ${catkin_INCLUDE_DIRS})
-target_link_libraries(beta1_twosteering control)
-
-add_executable(beta2_twosteering src/beta2_twosteering.cpp)
-target_include_directories(beta2_twosteering PRIVATE ${catkin_INCLUDE_DIRS})
-target_link_libraries(beta2_twosteering control)

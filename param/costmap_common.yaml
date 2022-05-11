@@ -1,4 +1,4 @@
-robot_base_frame: $(arg robot)/base_link
+robot_base_frame: $(arg robot)/footprint
 robot_radius: 0.    # to override with planner-specific launch 
 transform_tolerance: 0.5
 
