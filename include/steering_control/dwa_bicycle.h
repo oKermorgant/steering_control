@@ -40,9 +40,11 @@ private:
   double v_gain, w_gain, xy_tolerance, yaw_tolerance, v_max, beta_max, beta_dot_max;
   double simtime, time_samples, v_step, beta_dot_step;
 
+  // cost tuning
+  double path_dist_cost, goal_cost, path_align_cost, occdist_scale;
+
   // global plan
   bool goal_reached;
-  geometry_msgs::PoseStamped local_pose;
   std::vector<geometry_msgs::PoseStamped> global_plan, local_plan;
   bool updateLocalPlan();
   ros::Publisher local_plan_pub, traj_pub, cmd_pub;
