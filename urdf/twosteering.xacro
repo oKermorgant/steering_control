@@ -20,7 +20,7 @@
 
   <link name="base_link">
     <visual>
-      <origin rpy="0 ${PI/2} 0"/>
+      <origin rpy="0 ${PI/2} 0" xyz="${L/2} 0 0"/>
       <geometry>
         <cylinder length="${L}" radius="0.05"/>
       </geometry>
@@ -79,36 +79,8 @@
 </joint>    
 </xacro:macro>
 
- <xacro:wheel name="front" offset="${L/2}"/>
- <xacro:wheel name="rear" offset="${-L/2}"/>
-
-
-  <link name="carrot">
-      <visual>
-          <origin rpy="-1.57 0 0"/>
-          <geometry>
-              <mesh filename="package://ecn_mobile_control/urdf/carrot/carrot.dae" scale="0.003 0.003 0.003"/>
-          </geometry>
-      </visual>
-  </link>
-  
-    <joint name="carrot_disable" type="prismatic">
-    <parent link="footprint"/>
-    <child link="carrot_disable"/>
-    <axis xyz="0 0 1"/>
-    <limit lower="-100" upper="100" velocity="10" effort="-1"/>
-  </joint>   
-  
-  <joint name="carrot" type="prismatic">
-    <parent link="carrot_disable"/>
-    <child link="carrot"/>
-    <origin xyz="0 0 0"/>
-    <axis xyz="1 0 0"/>
-    <limit lower="-100" upper="100" velocity="10" effort="-1"/>
-  </joint>
-  
-  
-  <link name="carrot_disable"/>
-  
+ <xacro:wheel name="front" offset="${L}"/>
+ <xacro:wheel name="rear" offset="0"/>
+ 
   
 </robot>
