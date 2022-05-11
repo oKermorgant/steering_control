@@ -1,4 +1,7 @@
-# params for greedy_nowalls
+# params for dwa_twosteering
+
+front_joint: front_wheel_steering
+rear_joint: rear_wheel_steering
 v_gain: 3.
 w_gain: 2.
 
