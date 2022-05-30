@@ -36,6 +36,7 @@
             <!-- Costmap params are in ~local_costmap namespace -->
             <rosparam file="$(find steering_control)/param/costmap_common.yaml" command="load" subst_value="true" ns="local_costmap"/>
             <rosparam file="$(find steering_control)/param/local_costmap.yaml" command="load" subst_value="true"/>
+            <rosparam file="$(find steering_control)/param/local_planners/$(arg robot).yaml" command="load" subst_value="true"/>
         </node>
     
 

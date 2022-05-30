@@ -3,6 +3,7 @@
     
 <xacro:property name="PI" value="3.1415926535897931"/>
 
+<xacro:arg name="prefix" default="robot/"/>
 <xacro:property name="radius" value=".4"/>
 <xacro:property name="L" value="1."/>
 <xacro:property name="thickness" value="0.02"/>
@@ -28,11 +29,11 @@
     </visual>
   </link>
   
-  <link name="footprint"/>
+  <link name="$(arg prefix)footprint"/>
   
   <joint name="footprint" type="fixed">
       <child link="base_link"/>
-      <parent link="footprint"/>
+      <parent link="$(arg prefix)footprint"/>
     <origin xyz="0 0 ${radius}"/>
    </joint>
    

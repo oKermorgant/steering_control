@@ -1,0 +1,3 @@
+local_costmap:
+    # cost map params for bicycle
+    footprint: [[-0.52, 0.52],[2.12,0.52],[2.12, -0.52],[-0.52,-0.52]]
